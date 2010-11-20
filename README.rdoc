@@ -1,0 +1,7 @@
+= drizzle-ruby
+
+An interface to Drizzle using FFI and libdrizzle.
+
+== Copyright
+
+Copyright (c) 2010 Padraig O'Sullivan. See LICENSE for details.
