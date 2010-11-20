@@ -7,7 +7,7 @@ class TestBasic < Test::Unit::TestCase
   end
 
   should "retrieve libdrizzle API version" do
-    assert_equal 0.7, @drizzle.version
+    assert_equal "0.7", @drizzle.version
   end
 
   should "retrieve libdrizzle bug report url" do
