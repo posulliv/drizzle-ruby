@@ -91,6 +91,7 @@ module LibDrizzle
   attach_function :drizzle_con_free, [ :pointer ], :void
   attach_function :drizzle_con_set_tcp, [ :pointer, :string, :int ], :void
   attach_function :drizzle_con_set_db, [ :pointer, :string ], :void
+  attach_function :drizzle_con_fd, [ :pointer ], :int
 
   # query related functions
   attach_function :drizzle_query_str, [ :pointer, :pointer, :string, :pointer ], :pointer

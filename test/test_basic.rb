@@ -12,10 +12,20 @@ class TestBasic < Test::Unit::TestCase
     drizzle.bug_report_url
   end
 
-  should "perform a simple query" do
+  should "perform a simple sync query" do
     conn = Drizzle::Connection.new("localhost", 9306, "information_schema")
     res = conn.query("SELECT table_schema, table_name FROM TABLES")
     assert_equal res.class, Drizzle::Result
+    res.each do |row|
+      puts "#{row[0]} : #{row[1]}"
+    end
+  end
+
+  should "perform a simple async query" do
+    conn = Drizzle::Connection.new("localhost", 9306, "information_schema")
+    res = conn.async_query("SELECT table_schema, table_name FROM TABLES")
+    assert_equal res.class, Drizzle::Result
+    res.buffer_result
     res.each do |row|
       puts "#{row[0]} : #{row[1]}"
     end

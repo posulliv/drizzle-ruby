@@ -41,22 +41,47 @@ module Drizzle
 
     attr_reader :columns, :rows
 
-    def initialize(res_ptr)
+    def initialize(res_ptr, async = false)
       @columns, @rows = [], []
+      @res_ptr = res_ptr
+
+      if not async
+        loop do
+          col_ptr = LibDrizzle.drizzle_column_next(res_ptr)
+          break if col_ptr.null?
+          @columns << LibDrizzle.drizzle_column_name(col_ptr).to_sym
+        end
+
+        loop do
+          row_ptr = LibDrizzle.drizzle_row_next(res_ptr)
+          break if row_ptr.null?
+          @rows << row_ptr.get_array_of_string(0, @columns.size)
+        end
+
+        LibDrizzle.drizzle_result_free(res_ptr)
+      end
+    end
+
+    def buffer_result()
+      ret = LibDrizzle.drizzle_result_buffer(@res_ptr)
+      if LibDrizzle::ReturnCode[ret] != LibDrizzle::ReturnCode[:DRIZZLE_RETURN_OK]
+        LibDrizzle.drizzle_result_free(res)
+        raise GeneralError.new("Error: #{LibDrizzle.drizzle_error(@drizzle_handle)}")
+      end
 
       loop do
-        col_ptr = LibDrizzle.drizzle_column_next(res_ptr)
+        col_ptr = LibDrizzle.drizzle_column_next(@res_ptr)
         break if col_ptr.null?
         @columns << LibDrizzle.drizzle_column_name(col_ptr).to_sym
       end
 
       loop do
-        row_ptr = LibDrizzle.drizzle_row_next(res_ptr)
+        row_ptr = LibDrizzle.drizzle_row_next(@res_ptr)
         break if row_ptr.null?
         @rows << row_ptr.get_array_of_string(0, @columns.size)
       end
 
-      LibDrizzle.drizzle_result_free(res_ptr)
+      LibDrizzle.drizzle_result_free(@res_ptr)
     end
 
     def each
@@ -105,8 +130,9 @@ module Drizzle
     end
 
     def async_query(query)
-      LibDrizzle.drizzle_query_str(@con_ptr, nil, query, @ret_ptr)
+      res = LibDrizzle.drizzle_query_str(@con_ptr, nil, query, @ret_ptr)
       check_return_code
+      Result.new(res, true)
     end
 
     def async_result()
@@ -115,6 +141,7 @@ module Drizzle
       ret = LibDrizzle.drizzle_result_buffer(res)
       if LibDrizzle::ReturnCode[ret] != LibDrizzle::ReturnCode[:DRIZZLE_RETURN_OK]
         LibDrizzle.drizzle_result_free(res)
+        puts "actual error is: #{ret}"
         raise GeneralError.new("Error: #{LibDrizzle.drizzle_error(@drizzle_handle)}")
       end
       Result.new(res)
