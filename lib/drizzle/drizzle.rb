@@ -2,18 +2,143 @@ require 'drizzle/ffidrizzle'
 
 module Drizzle
 
+  class IoWait < RunTimeError; end
+  class Pause < RunTimeError; end
+  class RowBreak < RunTimeError; end
+  class Memory < RunTimeError; end
+  class InternalError < RunTimeError; end
+  class NotReady < RunTimeError; end
+  class BadPacketNumber < RunTimeError; end
+  class BadHandshake < RunTimeError; end
+  class BadPacket < RunTimeError; end
+  class ProtocolNotSupported < RunTimeError; end
+  class UnexpectedData < RunTimeError; end
+  class NoScramble < RunTimeError; end
+  class AuthFailed < RunTimeError; end
+  class NullSize < RunTimeError; end
+  class TooManyColumns < RunTimeError; end
+  class RowEnd < RunTimeError; end
+  class LostConnection < RunTimeError; end
+  class CouldNotConnect < RunTimeError; end
+  class NoActiveConnections < RunTimeError; end
+  class HandshakeFailed < RunTimeError; end
+  class Timeout < RunTimeError; end
+  class GeneralError < RunTimeError; end
+
+  class Result
+
+    attr_reader :columns, :rows
+
+    def initialize(res_ptr)
+      @columns, @rows = [], []
+
+      loop do
+        col_ptr = LibDrizzle.drizzle_column_next(res_ptr)
+        break if col_ptr.null?
+        @columns << LibDrizzle.drizzle_column_name(col_ptr).to_sym
+      end
+
+      loop do
+        row_ptr = LibDrizzle.drizzle_row_next(res_ptr)
+        break if row_ptr.null?
+        @rows << row_ptr.get_array_of_string(0, @columns.size)
+      end
+
+      LibDrizzle.drizzle_result_free(res_ptr)
+    end
+
+  end
+
   class Connection
 
-    def initialize(raw_con_ptr)
-      @con_ptr = raw_con_ptr
+    attr_accessor :host, :port, :db
+
+    def initialize(host = "localhost", port = 3306, db = nil, drizzle_ptr = nil)
+      @host = host
+      @port = port
+      @db = db
+      @drizzle_handle = drizzle_ptr || DrizzlePtr.new(LibDrizzle.drizzle_create(nil))
+      @con_ptr = ConnectionPtr.new(LibDrizzle.drizzle_con_create(@drizzle_handle, nil))
+      @ret_ptr = FFI::MemoryPointer.new(:int)
     end
 
     def set_tcp(host, port)
-      LibDrizzle.drizzle_con_set_tcp(@con_ptr, host, port)
+      @host = host
+      @port = port
+      LibDrizzle.drizzle_con_set_tcp(@con_ptr, @host, @port)
     end
 
     def set_db(db_name)
-      LibDrizzle.drizzle_con_set_db(@con_ptr, db_name)
+      @db = db_name
+      LibDrizzle.drizzle_con_set_db(@con_ptr, @db)
+    end
+
+    def query(query)
+      async_query(query)
+      async_result
+    end
+
+    def async_query(query)
+      LibDrizzle.drizzle_query_str(@con_ptr, nil, query, @ret_ptr)
+      check_return_code
+    end
+
+    def async_result()
+      res = LibDrizzle.drizzle_result_read(@con_ptr, nil, @retptr)
+      check_return_code
+      ret = LibDrizzle.drizzle_result_buffer(res)
+      if LibDrizzle::ReturnCode[ret] != :DRIZZLE_RETURN_OK
+        LibDrizzle.drizzle_result_free(res)
+        raise GeneralError.new("Error: #{LibDrizzle.drizzle_error(@drizzle_handle)}")
+      end
+      Result.new(res)
+    end
+
+    def check_return_code
+      case LibDrizzle.ReturnCode(@retptr.get_int(0))
+      when :DRIZZLE_RETURN_IO_WAIT
+        raise IoWait.new(LibDrizzle.drizzle_error(@drizzle_handle))
+      when :DRIZZLE_RETURN_PAUSE
+        raise Pause.new(LibDrizzle.drizzle_error(@drizzle_handle))
+      when :DRIZZLE_RETURN_ROW_BREAK
+        raise RowBreak.new(LibDrizzle.drizzle_error(@drizzle_handle))
+      when :DRIZZLE_RETURN_MEMORY
+        raise Memory.new(LibDrizzle.drizzle_error(@drizzle_handle))
+      when :DRIZZLE_RETURN_INTERNAL_ERROR
+        raise InternalError.new(LibDrizzle.drizzle_error(@drizzle_handle))
+      when :DRIZZLE_RETURN_NOT_READY
+        raise NotReady.new(LibDrizzle.drizzle_error(@drizzle_handle))
+      when :DRIZZLE_RETURN_BAD_PACKET_NUMBER
+        raise BadPacketNumber.new(LibDrizzle.drizzle_error(@drizzle_handle))
+      when :DRIZZLE_RETURN_BAD_HANDSHAKE_PACKET
+        raise BadHandshake.new(LibDrizzle.drizzle_error(@drizzle_handle))
+      when :DRIZZLE_RETURN_BAD_PACKET
+        raise BadPacket.new(LibDrizzle.drizzle_error(@drizzle_handle))
+      when :DRIZZLE_RETURN_PROTOCOL_NOT_SUPPORTED
+        raise ProtocolNotSupported.new(LibDrizzle.drizzle_error(@drizzle_handle))
+      when :DRIZZLE_RETURN_UNEXPECTED_DATA
+        raise UnexpectedData.new(LibDrizzle.drizzle_error(@drizzle_handle))
+      when :DRIZZLE_RETURN_NO_SCRAMBLE
+        raise NoScramble.new(LibDrizzle.drizzle_error(@drizzle_handle))
+      when :DRIZZLE_RETURN_AUTH_FAILED
+        raise AuthFailed.new(LibDrizzle.drizzle_error(@drizzle_handle))
+      when :DRIZZLE_RETURN_NULL_SIZE
+        raise NullSize.new(LibDrizzle.drizzle_error(@drizzle_handle))
+      when :DRIZZLE_RETURN_TOO_MANY_COLUMNS
+        raise TooManyColumns.new(LibDrizzle.drizzle_error(@drizzle_handle))
+      when :DRIZZLE_RETURN_ROW_END
+        raise RowEnd.new(LibDrizzle.drizzle_error(@drizzle_handle))
+      when :DRIZZLE_RETURN_LOST_CONNECTION
+        raise LostConnection.new(LibDrizzle.drizzle_error(@drizzle_handle))
+      when :DRIZZLE_RETURN_COULD_NOT_CONNECT
+        raise CouldNotConnect.new(LibDrizzle.drizzle_error(@drizzle_handle))
+      when :DRIZZLE_RETURN_NO_ACTIVE_CONNECTIONS
+        raise NoActiveConnections.new(LibDrizzle.drizzle_error(@drizzle_handle))
+      when :DRIZZLE_RETURN_HANDSHAKE_FAILED
+        raise HandshakeFailed.new(LibDrizzle.drizzle_error(@drizzle_handle))
+      when :DRIZZLE_RETURN_TIMEOUT
+        raise ReturnTimeout.new(LibDrizzle.drizzle_error(@drizzle_handle))
+      end
     end
 
   end
@@ -21,12 +146,11 @@ module Drizzle
   class Drizzle
 
     def initialize()
-      @handle = LibDrizzle.drizzle_create(nil)
+      @handle = DrizzlePtr.new(LibDrizzle.drizzle_create(nil))
     end
 
     def create_client_connection()
-      con_ptr = LibDrizzle.drizzle_con_create(@handle, nil)
-      Connection.new(con_ptr)
+      Connection.new(@handle)
     end
 
     def version()

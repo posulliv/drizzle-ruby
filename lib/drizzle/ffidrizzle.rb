@@ -82,31 +82,6 @@ module LibDrizzle
                   :DRIZZLE_FREE_OBJECTS, (1 << 2),
                   :DRIZZLE_ASSERT_DANGLING, (1 << 3) )
 
-  # main drizzle structure
-  class DrizzleSt < FFI::Struct
-    layout :error_code,          :uint16,
-           :options,             Options,
-           :verbose,             VerbosityLevel,
-           :con_count,           :uint32,
-           :pfds_size,           :uint32,
-           :query_count,         :uint32,
-           :query_new,           :uint32,
-           :query_running,       :uint32,
-           :last_errno,          :int,
-           :timeout,             :int,
-           :con_list,            :pointer,
-           :context,             :pointer,
-           :context_free_fn,     :pointer,
-           :event_watch_fn,      :pointer,
-           :event_watch_context, :pointer,
-           :log_fn,              :pointer,
-           :log_context,         :pointer,
-           :pfds,                :pointer,
-           :query_list,          :pointer,
-           :sqlstate,            [:string, (MAX_SQLSTATE_SIZE + 1)],
-           :last_error,          [:string, MAX_ERROR_SIZE]
-  end
-
   attach_function :drizzle_create, [ :pointer ], :pointer
   attach_function :drizzle_free, [ :pointer ], :void
   attach_function :drizzle_set_verbose, [ :pointer, VerbosityLevel ], :void
@@ -119,6 +94,7 @@ module LibDrizzle
 
   # query related functions
   attach_function :drizzle_query_str, [ :pointer, :pointer, :string, :pointer ], :pointer
+  attach_function :drizzle_result_read, [ :pointer, :pointer, :pointer ], :pointer
   attach_function :drizzle_result_buffer, [ :pointer ], ReturnCode
   attach_function :drizzle_result_free, [ :pointer ], :void
   attach_function :drizzle_row_next, [ :pointer ], :pointer
@@ -127,5 +103,18 @@ module LibDrizzle
   # miscellaneous functions
   attach_function :drizzle_version, [], :string
   attach_function :drizzle_bugreport, [], :string
+  attach_function :drizzle_error, [ :pointer ], :string
+
+  class DrizzlePtr < FFI::AutoPointer
+    def self.release(ptr)
+      LibDrizzle.drizzle_free(ptr)
+    end
+  end
+
+  class ConnectionPtr < FFI::AutoPointer
+    def self.release(ptr)
+      LibDrizzle.drizzle_con_free(ptr)
+    end
+  end
 
 end
