@@ -203,8 +203,8 @@ module Drizzle
       @handle = DrizzlePtr.new(LibDrizzle.drizzle_create(nil))
     end
 
-    def create_client_connection()
-      Connection.new(@handle)
+    def create_client_connection(host, port, db)
+      Connection.new(host, port, db, @handle)
     end
 
     def version()
