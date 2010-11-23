@@ -2,28 +2,40 @@ require 'drizzle/ffidrizzle'
 
 module Drizzle
 
-  class IoWait < RunTimeError; end
-  class Pause < RunTimeError; end
-  class RowBreak < RunTimeError; end
-  class Memory < RunTimeError; end
-  class InternalError < RunTimeError; end
-  class NotReady < RunTimeError; end
-  class BadPacketNumber < RunTimeError; end
-  class BadHandshake < RunTimeError; end
-  class BadPacket < RunTimeError; end
-  class ProtocolNotSupported < RunTimeError; end
-  class UnexpectedData < RunTimeError; end
-  class NoScramble < RunTimeError; end
-  class AuthFailed < RunTimeError; end
-  class NullSize < RunTimeError; end
-  class TooManyColumns < RunTimeError; end
-  class RowEnd < RunTimeError; end
-  class LostConnection < RunTimeError; end
-  class CouldNotConnect < RunTimeError; end
-  class NoActiveConnections < RunTimeError; end
-  class HandshakeFailed < RunTimeError; end
-  class Timeout < RunTimeError; end
-  class GeneralError < RunTimeError; end
+  class IoWait < RuntimeError; end
+  class Pause < RuntimeError; end
+  class RowBreak < RuntimeError; end
+  class Memory < RuntimeError; end
+  class InternalError < RuntimeError; end
+  class NotReady < RuntimeError; end
+  class BadPacketNumber < RuntimeError; end
+  class BadHandshake < RuntimeError; end
+  class BadPacket < RuntimeError; end
+  class ProtocolNotSupported < RuntimeError; end
+  class UnexpectedData < RuntimeError; end
+  class NoScramble < RuntimeError; end
+  class AuthFailed < RuntimeError; end
+  class NullSize < RuntimeError; end
+  class TooManyColumns < RuntimeError; end
+  class RowEnd < RuntimeError; end
+  class LostConnection < RuntimeError; end
+  class CouldNotConnect < RuntimeError; end
+  class NoActiveConnections < RuntimeError; end
+  class HandshakeFailed < RuntimeError; end
+  class Timeout < RuntimeError; end
+  class GeneralError < RuntimeError; end
+
+  class DrizzlePtr < FFI::AutoPointer
+    def self.release(ptr)
+      LibDrizzle.drizzle_free(ptr)
+    end
+  end
+
+  class ConnectionPtr < FFI::AutoPointer
+    def self.release(ptr)
+      LibDrizzle.drizzle_con_free(ptr)
+    end
+  end
 
   class Result
 
@@ -142,6 +154,7 @@ module Drizzle
     end
 
   end
+
 
   class Drizzle
 

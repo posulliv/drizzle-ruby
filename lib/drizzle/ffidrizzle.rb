@@ -105,16 +105,4 @@ module LibDrizzle
   attach_function :drizzle_bugreport, [], :string
   attach_function :drizzle_error, [ :pointer ], :string
 
-  class DrizzlePtr < FFI::AutoPointer
-    def self.release(ptr)
-      LibDrizzle.drizzle_free(ptr)
-    end
-  end
-
-  class ConnectionPtr < FFI::AutoPointer
-    def self.release(ptr)
-      LibDrizzle.drizzle_con_free(ptr)
-    end
-  end
-
 end
