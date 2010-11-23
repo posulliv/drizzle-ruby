@@ -98,6 +98,8 @@ module LibDrizzle
   attach_function :drizzle_result_buffer, [ :pointer ], ReturnCode
   attach_function :drizzle_result_free, [ :pointer ], :void
   attach_function :drizzle_row_next, [ :pointer ], :pointer
+  attach_function :drizzle_column_next, [ :pointer ], :pointer
+  attach_function :drizzle_column_name, [ :pointer ], :string
   attach_function :drizzle_result_column_count, [ :pointer ], :uint16
 
   # miscellaneous functions

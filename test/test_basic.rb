@@ -2,16 +2,23 @@ require File.dirname(__FILE__) + '/helper'
 
 class TestBasic < Test::Unit::TestCase
 
-  def setup
-    @drizzle = Drizzle::Drizzle.new
-  end
-
   should "retrieve libdrizzle API version" do
-    assert_equal "0.7", @drizzle.version
+    drizzle = Drizzle::Drizzle.new
+    assert_equal "0.7", drizzle.version
   end
 
   should "retrieve libdrizzle bug report url" do
-    @drizzle.bug_report_url
+    drizzle = Drizzle::Drizzle.new
+    drizzle.bug_report_url
+  end
+
+  should "perform a simple query" do
+    conn = Drizzle::Connection.new("localhost", 9306, "information_schema")
+    res = conn.query("SELECT table_schema, table_name FROM TABLES")
+    assert_equal res.class, Drizzle::Result
+    res.each do |row|
+      puts "#{row[0]} : #{row[1]}"
+    end
   end
 
 end

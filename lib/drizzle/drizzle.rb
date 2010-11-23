@@ -59,18 +59,26 @@ module Drizzle
       LibDrizzle.drizzle_result_free(res_ptr)
     end
 
+    def each
+      @rows.each do |row|
+        yield row if block_given?
+      end
+    end
+
   end
 
   class Connection
 
     attr_accessor :host, :port, :db
 
-    def initialize(host = "localhost", port = 3306, db = nil, drizzle_ptr = nil)
+    def initialize(host = "localhost", port = 4427, db = nil, drizzle_ptr = nil)
       @host = host
       @port = port
       @db = db
       @drizzle_handle = drizzle_ptr || DrizzlePtr.new(LibDrizzle.drizzle_create(nil))
       @con_ptr = ConnectionPtr.new(LibDrizzle.drizzle_con_create(@drizzle_handle, nil))
+      LibDrizzle.drizzle_con_set_tcp(@con_ptr, @host, @port) 
+      LibDrizzle.drizzle_con_set_db(@con_ptr, @db) if @db
       @ret_ptr = FFI::MemoryPointer.new(:int)
     end
 
@@ -86,8 +94,14 @@ module Drizzle
     end
 
     def query(query)
-      async_query(query)
-      async_result
+      res = LibDrizzle.drizzle_query_str(@con_ptr, nil, query, @ret_ptr)
+      check_return_code
+      ret = LibDrizzle.drizzle_result_buffer(res)
+      if LibDrizzle::ReturnCode[ret] != LibDrizzle::ReturnCode[:DRIZZLE_RETURN_OK]
+        LibDrizzle.drizzle_result_free(res)
+        raise GeneralError.new("Error: #{LibDrizzle.drizzle_error(@drizzle_handle)}")
+      end
+      Result.new(res)
     end
 
     def async_query(query)
@@ -96,10 +110,10 @@ module Drizzle
     end
 
     def async_result()
-      res = LibDrizzle.drizzle_result_read(@con_ptr, nil, @retptr)
+      res = LibDrizzle.drizzle_result_read(@con_ptr, nil, @ret_ptr)
       check_return_code
       ret = LibDrizzle.drizzle_result_buffer(res)
-      if LibDrizzle::ReturnCode[ret] != :DRIZZLE_RETURN_OK
+      if LibDrizzle::ReturnCode[ret] != LibDrizzle::ReturnCode[:DRIZZLE_RETURN_OK]
         LibDrizzle.drizzle_result_free(res)
         raise GeneralError.new("Error: #{LibDrizzle.drizzle_error(@drizzle_handle)}")
       end
@@ -107,7 +121,7 @@ module Drizzle
     end
 
     def check_return_code
-      case LibDrizzle.ReturnCode(@retptr.get_int(0))
+      case LibDrizzle::ReturnCode[@ret_ptr.get_int(0)]
       when :DRIZZLE_RETURN_IO_WAIT
         raise IoWait.new(LibDrizzle.drizzle_error(@drizzle_handle))
       when :DRIZZLE_RETURN_PAUSE
