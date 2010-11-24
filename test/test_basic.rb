@@ -16,6 +16,7 @@ class TestBasic < Test::Unit::TestCase
     conn = Drizzle::Connection.new("localhost", 9306, "data_dictionary")
     res = conn.query("SELECT module_name, module_author FROM MODULES")
     assert_equal res.class, Drizzle::Result
+    res.buffer_result
     res.each do |row|
       puts "#{row[0]} : #{row[1]}"
     end
