@@ -10,6 +10,17 @@ module Drizzle
   end
 
   # 
+  # connection options
+  #
+  NONE = 0
+  ALLOCATED = 1
+  MYSQL = 2
+  RAW_PACKET = 4
+  RAW_SCRAMBLE = 8
+  READY = 16
+  NO_RESULT_READ = 32
+
+  # 
   # A drizzle connection
   #
   class Connection
@@ -32,7 +43,7 @@ module Drizzle
     #   c = Drizzle::Connection.new
     #   c = Drizzle::Connection.new("my_host", 4427)
     #   c = Drizzle::Connection.new("my_host", 4427, "my_db")
-    #   c = Drizzle::Connection.new("my_host", 4427, "my_db", :DRIZZLE_CON_NONE)
+    #   c = Drizzle::Connection.new("my_host", 4427, "my_db", [Drizzle::NONE])
     #
     def initialize(host = "localhost", port = 4427, db = nil, opts = [], drizzle_ptr = nil)
       @host = host

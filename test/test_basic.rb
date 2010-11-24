@@ -12,6 +12,11 @@ class TestBasic < Test::Unit::TestCase
     assert_equal "https://launchpad.net/libdrizzle", drizzle.bug_report_url
   end
 
+  should "connect to drizzle successfully" do
+    conn = Drizzle::Connection.new("localhost", 9306)
+    assert_equal conn.class, Drizzle::Connection
+  end
+
   should "perform a simple query and buffer all results" do
     conn = Drizzle::Connection.new("localhost", 9306, "data_dictionary")
     res = conn.query("SELECT module_name, module_author FROM MODULES where module_name = 'SchemaEngine'")
@@ -24,7 +29,7 @@ class TestBasic < Test::Unit::TestCase
   end
 
   should "perform another simple query and buffer all results" do
-    conn = Drizzle::Connection.new("localhost", 9306, "information_schema", [:DRIZZLE_CON_NONE])
+    conn = Drizzle::Connection.new("localhost", 9306, "information_schema", [Drizzle::NONE])
     res = conn.query("SELECT table_schema, table_name FROM TABLES WHERE table_schema = 'DATA_DICTIONARY' AND table_name = 'GLOBAL_STATUS'")
     assert_equal res.class, Drizzle::Result
     res.buffer_result
@@ -60,6 +65,21 @@ class TestBasic < Test::Unit::TestCase
     res.buffer_result
     assert_equal 1, res.columns.size
     assert_equal true, res.rows.empty?
+  end
+
+  should "use different connection options" do
+    conn = Drizzle::Connection.new("localhost", 9306, "information_schema", [Drizzle::NONE])
+    res = conn.query("SELECT COUNT(*) FROM COLUMNS WHERE table_name = 'GLOBAL_STATUS'")
+    assert_equal res.class, Drizzle::Result
+    until (row = res.buffer_row).nil?
+      assert_equal "2", row[0]
+    end
+    conn = Drizzle::Connection.new("localhost", 9306, "information_schema", [Drizzle::NONE, Drizzle::MYSQL])
+    res = conn.query("SELECT COUNT(*) FROM COLUMNS WHERE table_name = 'GLOBAL_STATUS'")
+    assert_equal res.class, Drizzle::Result
+    until (row = res.buffer_row).nil?
+      assert_equal "2", row[0]
+    end
   end
 
 end
