@@ -41,32 +41,15 @@ module Drizzle
 
     attr_reader :columns, :rows
 
-    def initialize(res_ptr, async = false)
+    def initialize(res_ptr)
       @columns, @rows = [], []
       @res_ptr = res_ptr
-
-      if not async
-        loop do
-          col_ptr = LibDrizzle.drizzle_column_next(res_ptr)
-          break if col_ptr.null?
-          @columns << LibDrizzle.drizzle_column_name(col_ptr).to_sym
-        end
-
-        loop do
-          row_ptr = LibDrizzle.drizzle_row_next(res_ptr)
-          break if row_ptr.null?
-          @rows << row_ptr.get_array_of_string(0, @columns.size)
-        end
-
-        LibDrizzle.drizzle_result_free(res_ptr)
-      end
     end
 
     def buffer_result()
       ret = LibDrizzle.drizzle_result_buffer(@res_ptr)
       if LibDrizzle::ReturnCode[ret] != LibDrizzle::ReturnCode[:DRIZZLE_RETURN_OK]
-        LibDrizzle.drizzle_result_free(res)
-        raise GeneralError.new("Error: #{LibDrizzle.drizzle_error(@drizzle_handle)}")
+        LibDrizzle.drizzle_result_free(@res_ptr)
       end
 
       loop do
@@ -84,6 +67,33 @@ module Drizzle
       LibDrizzle.drizzle_result_free(@res_ptr)
     end
 
+    def buffer_row()
+      # if the columns have not been read for this result
+      # set yet, then we need to do that here. If this is not
+      # performed here, we will receive a bad packet error
+      read_columns if @columns.empty?
+      ret_ptr = FFI::MemoryPointer.new(:int)
+      row_ptr = LibDrizzle.drizzle_row_buffer(@res_ptr, ret_ptr)
+      if LibDrizzle::ReturnCode[ret_ptr.get_int(0)] != :DRIZZLE_RETURN_OK
+        LibDrizzle.drizzle_result_free(@res_ptr)
+      end
+      if row_ptr.null?
+        LibDrizzle.drizzle_result_free(@res_ptr)
+        return nil
+      end
+      num_of_cols = LibDrizzle.drizzle_result_column_count(@res_ptr)
+      row = row_ptr.get_array_of_string(0, @columns.size)
+    end
+
+    def read_columns
+      ret = LibDrizzle.drizzle_column_buffer(@res_ptr)
+      loop do
+        col_ptr = LibDrizzle.drizzle_column_next(@res_ptr)
+        break if col_ptr.null?
+        @columns << LibDrizzle.drizzle_column_name(col_ptr).to_sym
+      end
+    end
+
     def each
       @rows.each do |row|
         yield row if block_given?
@@ -96,12 +106,15 @@ module Drizzle
 
     attr_accessor :host, :port, :db
 
-    def initialize(host = "localhost", port = 4427, db = nil, drizzle_ptr = nil)
+    def initialize(host = "localhost", port = 4427, db = nil, opts = [], drizzle_ptr = nil)
       @host = host
       @port = port
       @db = db
       @drizzle_handle = drizzle_ptr || DrizzlePtr.new(LibDrizzle.drizzle_create(nil))
       @con_ptr = ConnectionPtr.new(LibDrizzle.drizzle_con_create(@drizzle_handle, nil))
+      opts.each do |opt|
+        LibDrizzle.drizzle_con_add_options(@con_ptr, LibDrizzle::ConnectionOptions[opt])
+      end
       LibDrizzle.drizzle_con_set_tcp(@con_ptr, @host, @port) 
       LibDrizzle.drizzle_con_set_db(@con_ptr, @db) if @db
       @ret_ptr = FFI::MemoryPointer.new(:int)
@@ -121,29 +134,6 @@ module Drizzle
     def query(query)
       res = LibDrizzle.drizzle_query_str(@con_ptr, nil, query, @ret_ptr)
       check_return_code
-      ret = LibDrizzle.drizzle_result_buffer(res)
-      if LibDrizzle::ReturnCode[ret] != LibDrizzle::ReturnCode[:DRIZZLE_RETURN_OK]
-        LibDrizzle.drizzle_result_free(res)
-        raise GeneralError.new("Error: #{LibDrizzle.drizzle_error(@drizzle_handle)}")
-      end
-      Result.new(res)
-    end
-
-    def async_query(query)
-      res = LibDrizzle.drizzle_query_str(@con_ptr, nil, query, @ret_ptr)
-      check_return_code
-      Result.new(res, true)
-    end
-
-    def async_result()
-      res = LibDrizzle.drizzle_result_read(@con_ptr, nil, @ret_ptr)
-      check_return_code
-      ret = LibDrizzle.drizzle_result_buffer(res)
-      if LibDrizzle::ReturnCode[ret] != LibDrizzle::ReturnCode[:DRIZZLE_RETURN_OK]
-        LibDrizzle.drizzle_result_free(res)
-        puts "actual error is: #{ret}"
-        raise GeneralError.new("Error: #{LibDrizzle.drizzle_error(@drizzle_handle)}")
-      end
       Result.new(res)
     end
 

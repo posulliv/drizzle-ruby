@@ -75,6 +75,15 @@ module LibDrizzle
                            :DRIZZLE_CON_STATUS_NO_BACKSLASH_ESCAPES, (1 << 9),
                            :DRIZZLE_CON_STATUS_QUERY_WAS_SLOW, (1 << 10) )
 
+  # Options for connections
+  ConnectionOptions = enum( :DRIZZLE_CON_NONE, 0,
+                            :DRIZZLE_CON_ALLOCATED, (1 << 0),
+                            :DRIZZLE_CON_MYSQL, (1 << 1),
+                            :DRIZZLE_CON_RAW_PACKET, (1 << 2),
+                            :DRIZZLE_CON_RAW_SCRAMBLE, (1 << 3),
+                            :DRIZZLE_CON_READY, (1 << 4),
+                            :DRIZZLE_CON_NO_RESULT_READ, (1 << 5) )
+
   # options for main drizzle structure
   Options = enum( :DRIZZLE_NONE, 0,
                   :DRIZZLE_ALLOCATED, (1 << 0),
@@ -91,16 +100,20 @@ module LibDrizzle
   attach_function :drizzle_con_free, [ :pointer ], :void
   attach_function :drizzle_con_set_tcp, [ :pointer, :string, :int ], :void
   attach_function :drizzle_con_set_db, [ :pointer, :string ], :void
+  attach_function :drizzle_con_add_options, [ :pointer, ConnectionOptions ], :void
   attach_function :drizzle_con_fd, [ :pointer ], :int
 
   # query related functions
   attach_function :drizzle_query_str, [ :pointer, :pointer, :string, :pointer ], :pointer
   attach_function :drizzle_result_read, [ :pointer, :pointer, :pointer ], :pointer
+  attach_function :drizzle_row_buffer, [ :pointer, :pointer ], :pointer
+  attach_function :drizzle_row_free, [ :pointer ], :void
   attach_function :drizzle_result_buffer, [ :pointer ], ReturnCode
   attach_function :drizzle_result_free, [ :pointer ], :void
   attach_function :drizzle_row_next, [ :pointer ], :pointer
   attach_function :drizzle_column_next, [ :pointer ], :pointer
   attach_function :drizzle_column_name, [ :pointer ], :string
+  attach_function :drizzle_column_buffer, [ :pointer ], ReturnCode
   attach_function :drizzle_result_column_count, [ :pointer ], :uint16
 
   # miscellaneous functions
