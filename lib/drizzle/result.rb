@@ -7,7 +7,7 @@ module Drizzle
   #
   class Result
 
-    attr_reader :columns, :rows
+    attr_reader :columns, :rows, :affected_rows, :insert_id
 
     # 
     # creates a result set instance
@@ -22,6 +22,8 @@ module Drizzle
     def initialize(res_ptr)
       @columns, @rows = [], []
       @res_ptr = res_ptr
+      @affected_rows = LibDrizzle.drizzle_result_affected_rows(@res_ptr)
+      @insert_id = LibDrizzle.drizzle_result_insert_id(@res_ptr)
     end
 
     # 

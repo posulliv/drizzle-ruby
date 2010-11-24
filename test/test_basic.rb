@@ -82,4 +82,14 @@ class TestBasic < Test::Unit::TestCase
     end
   end
 
+  should "perform a query with a code block" do
+    conn = Drizzle::Connection.new("localhost", 9306, "information_schema", [Drizzle::NONE])
+    conn.query("SELECT COUNT(*) FROM COLUMNS WHERE table_name = 'GLOBAL_STATUS'") do |res|
+      assert_equal res.class, Drizzle::Result
+      until (row = res.buffer_row).nil?
+        assert_equal "2", row[0]
+      end
+    end
+  end
+
 end
