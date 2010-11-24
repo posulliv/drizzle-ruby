@@ -92,4 +92,12 @@ class TestBasic < Test::Unit::TestCase
     end
   end
 
+  should "perform a simple show variables command" do
+    conn = Drizzle::Connection.new("localhost", 9306, "information_schema", [Drizzle::NONE])
+    assert_equal conn.class, Drizzle::Connection
+    res = conn.query("show variables")
+    assert_equal res.class, Drizzle::Result
+    res.buffer_result
+  end
+
 end
