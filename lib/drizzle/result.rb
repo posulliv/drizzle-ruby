@@ -2,15 +2,32 @@ require 'drizzle/ffidrizzle'
 
 module Drizzle
 
+  # 
+  # a result set from a drizzle query
+  #
   class Result
 
     attr_reader :columns, :rows
 
+    # 
+    # creates a result set instance
+    # This result set does not buffer any results until instructed
+    # to do so. Results can be fully buffered or buffered at the
+    # row level.
+    #
+    # == parameters
+    #
+    #  * res_ptr   FFI memory pointer to a drizzle_result_t object
+    #
     def initialize(res_ptr)
       @columns, @rows = [], []
       @res_ptr = res_ptr
     end
 
+    # 
+    # buffer all rows and columns and copy them into ruby arrays
+    # Free the FFI pointer afterwards
+    #
     def buffer_result()
       ret = LibDrizzle.drizzle_result_buffer(@res_ptr)
       if LibDrizzle::ReturnCode[ret] != LibDrizzle::ReturnCode[:DRIZZLE_RETURN_OK]
@@ -32,6 +49,9 @@ module Drizzle
       LibDrizzle.drizzle_result_free(@res_ptr)
     end
 
+    # 
+    # buffer an individual row.
+    #
     def buffer_row()
       # if the columns have not been read for this result
       # set yet, then we need to do that here. If this is not
@@ -50,6 +70,9 @@ module Drizzle
       row = row_ptr.get_array_of_string(0, @columns.size)
     end
 
+    # 
+    # buffer all columns for this result set
+    #
     def read_columns
       ret = LibDrizzle.drizzle_column_buffer(@res_ptr)
       loop do

@@ -1,4 +1,5 @@
 require 'drizzle/ffidrizzle'
+require 'drizzle/exceptions'
 
 module Drizzle
 
@@ -8,10 +9,31 @@ module Drizzle
     end
   end
 
+  # 
+  # A drizzle connection
+  #
   class Connection
 
     attr_accessor :host, :port, :db
 
+    #
+    # Creates a connection instance
+    #
+    #  == parameters
+    #   
+    #   * host        the hostname for the connection
+    #   * port        the port number for the connection
+    #   * db          the database name for the connection
+    #   * opts        connection options
+    #   * drizzle_ptr FFI pointer to a drizzle_st object
+    #
+    # Some examples :
+    #
+    #   c = Drizzle::Connection.new
+    #   c = Drizzle::Connection.new("my_host", 4427)
+    #   c = Drizzle::Connection.new("my_host", 4427, "my_db")
+    #   c = Drizzle::Connection.new("my_host", 4427, "my_db", :DRIZZLE_CON_NONE)
+    #
     def initialize(host = "localhost", port = 4427, db = nil, opts = [], drizzle_ptr = nil)
       @host = host
       @port = port
@@ -26,68 +48,30 @@ module Drizzle
       @ret_ptr = FFI::MemoryPointer.new(:int)
     end
 
+    # 
+    # set the host and port for the connection
+    #
     def set_tcp(host, port)
       @host = host
       @port = port
       LibDrizzle.drizzle_con_set_tcp(@con_ptr, @host, @port)
     end
 
+    # 
+    # set the database name for the connection
+    #
     def set_db(db_name)
       @db = db_name
       LibDrizzle.drizzle_con_set_db(@con_ptr, @db)
     end
 
+    # 
+    # execute a query and construct a result object
+    #
     def query(query)
       res = LibDrizzle.drizzle_query_str(@con_ptr, nil, query, @ret_ptr)
-      check_return_code
+      check_return_code(@ret_ptr, @drizzle_handle)
       Result.new(res)
-    end
-
-    def check_return_code
-      case LibDrizzle::ReturnCode[@ret_ptr.get_int(0)]
-      when :DRIZZLE_RETURN_IO_WAIT
-        raise IoWait.new(LibDrizzle.drizzle_error(@drizzle_handle))
-      when :DRIZZLE_RETURN_PAUSE
-        raise Pause.new(LibDrizzle.drizzle_error(@drizzle_handle))
-      when :DRIZZLE_RETURN_ROW_BREAK
-        raise RowBreak.new(LibDrizzle.drizzle_error(@drizzle_handle))
-      when :DRIZZLE_RETURN_MEMORY
-        raise Memory.new(LibDrizzle.drizzle_error(@drizzle_handle))
-      when :DRIZZLE_RETURN_INTERNAL_ERROR
-        raise InternalError.new(LibDrizzle.drizzle_error(@drizzle_handle))
-      when :DRIZZLE_RETURN_NOT_READY
-        raise NotReady.new(LibDrizzle.drizzle_error(@drizzle_handle))
-      when :DRIZZLE_RETURN_BAD_PACKET_NUMBER
-        raise BadPacketNumber.new(LibDrizzle.drizzle_error(@drizzle_handle))
-      when :DRIZZLE_RETURN_BAD_HANDSHAKE_PACKET
-        raise BadHandshake.new(LibDrizzle.drizzle_error(@drizzle_handle))
-      when :DRIZZLE_RETURN_BAD_PACKET
-        raise BadPacket.new(LibDrizzle.drizzle_error(@drizzle_handle))
-      when :DRIZZLE_RETURN_PROTOCOL_NOT_SUPPORTED
-        raise ProtocolNotSupported.new(LibDrizzle.drizzle_error(@drizzle_handle))
-      when :DRIZZLE_RETURN_UNEXPECTED_DATA
-        raise UnexpectedData.new(LibDrizzle.drizzle_error(@drizzle_handle))
-      when :DRIZZLE_RETURN_NO_SCRAMBLE
-        raise NoScramble.new(LibDrizzle.drizzle_error(@drizzle_handle))
-      when :DRIZZLE_RETURN_AUTH_FAILED
-        raise AuthFailed.new(LibDrizzle.drizzle_error(@drizzle_handle))
-      when :DRIZZLE_RETURN_NULL_SIZE
-        raise NullSize.new(LibDrizzle.drizzle_error(@drizzle_handle))
-      when :DRIZZLE_RETURN_TOO_MANY_COLUMNS
-        raise TooManyColumns.new(LibDrizzle.drizzle_error(@drizzle_handle))
-      when :DRIZZLE_RETURN_ROW_END
-        raise RowEnd.new(LibDrizzle.drizzle_error(@drizzle_handle))
-      when :DRIZZLE_RETURN_LOST_CONNECTION
-        raise LostConnection.new(LibDrizzle.drizzle_error(@drizzle_handle))
-      when :DRIZZLE_RETURN_COULD_NOT_CONNECT
-        raise CouldNotConnect.new(LibDrizzle.drizzle_error(@drizzle_handle))
-      when :DRIZZLE_RETURN_NO_ACTIVE_CONNECTIONS
-        raise NoActiveConnections.new(LibDrizzle.drizzle_error(@drizzle_handle))
-      when :DRIZZLE_RETURN_HANDSHAKE_FAILED
-        raise HandshakeFailed.new(LibDrizzle.drizzle_error(@drizzle_handle))
-      when :DRIZZLE_RETURN_TIMEOUT
-        raise ReturnTimeout.new(LibDrizzle.drizzle_error(@drizzle_handle))
-      end
     end
 
   end
