@@ -17,6 +17,7 @@ class TestBasic < Test::Unit::TestCase
     res = conn.query("SELECT module_name, module_author FROM MODULES where module_name = 'SchemaEngine'")
     assert_equal res.class, Drizzle::Result
     res.buffer_result
+    assert_equal 2, res.columns.size
     res.each do |row|
       assert_equal "Brian Aker", row[1]
     end
@@ -27,6 +28,7 @@ class TestBasic < Test::Unit::TestCase
     res = conn.query("SELECT table_schema, table_name FROM TABLES WHERE table_schema = 'DATA_DICTIONARY' AND table_name = 'GLOBAL_STATUS'")
     assert_equal res.class, Drizzle::Result
     res.buffer_result
+    assert_equal 2, res.columns.size
     res.each do |row|
       assert_equal "DATA_DICTIONARY", row[0]
       assert_equal "GLOBAL_STATUS", row[1]
@@ -48,6 +50,7 @@ class TestBasic < Test::Unit::TestCase
     res = conn.query("select table_schema from information_schema.tables where table_schema = 'padraig'")
     assert_equal res.class, Drizzle::Result
     res.buffer_result
+    assert_equal 1, res.columns.size 
     res.each do |row|
       assert_equal "padraig", row[0]
     end
@@ -55,6 +58,7 @@ class TestBasic < Test::Unit::TestCase
     res = conn.query("select table_schema from information_schema.tables where table_schema = 'padraig'")
     assert_equal res.class, Drizzle::Result
     res.buffer_result
+    assert_equal 1, res.columns.size
     assert_equal true, res.rows.empty?
   end
 
@@ -64,12 +68,14 @@ class TestBasic < Test::Unit::TestCase
     res = conn.query("select table_schema from information_schema.tables where table_schema = 'padraig'")
     assert_equal res.class, Drizzle::Result
     res.buffer_result
+    assert_equal 1, res.columns.size
     res.each do |row|
       assert_equal "padraig", row[0]
     end
     res = conn.query("create table padraig.t1(a int, b varchar(255))")
     res = conn.query("select table_schema, table_name from information_schema.tables where table_schema = 'padraig'")
     res.buffer_result
+    assert_equal 2, res.columns.size
     res.each do |row|
       assert_equal "t1", row[1]
     end
@@ -77,6 +83,7 @@ class TestBasic < Test::Unit::TestCase
     res = conn.query("select table_schema from information_schema.tables where table_schema = 'padraig'")
     assert_equal res.class, Drizzle::Result
     res.buffer_result
+    assert_equal 1, res.columns.size
     assert_equal true, res.rows.empty?
   end
 
