@@ -41,4 +41,41 @@ class TestBasic < Test::Unit::TestCase
     end
   end
 
+  should "create and drop a database" do
+    conn = Drizzle::Connection.new("localhost", 9306)
+    res = conn.query("CREATE DATABASE padraig")
+    res = conn.query("show databases")
+    assert_equal res.class, Drizzle::Result
+    res.buffer_result
+    res.each do |row|
+      puts "#{row[0]}"
+    end
+    res = conn.query("DROP DATABASE padraig")
+  end
+
+  should "create and drop a table" do
+    conn = Drizzle::Connection.new("localhost", 9306)
+    res = conn.query("CREATE DATABASE padraig")
+    res = conn.query("show databases")
+    assert_equal res.class, Drizzle::Result
+    res.buffer_result
+    res.each do |row|
+      puts "#{row[0]}"
+    end
+    res = conn.query("create table padraig.t1(a int, b varchar(255))")
+    res = conn.query("select table_schema, table_name from information_schema.tables where table_schema = 'padraig'")
+    res.buffer_result
+    res.each do |row|
+      puts "#{row[0]}: #{row[1]}"
+      assert_equal "t1", row[1]
+    end
+    res = conn.query("DROP DATABASE padraig")
+    res = conn.query("show databases")
+    assert_equal res.class, Drizzle::Result
+    res.buffer_result
+    res.each do |row|
+      puts "#{row[0]}"
+    end
+  end
+
 end

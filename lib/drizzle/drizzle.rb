@@ -205,6 +205,13 @@ module Drizzle
       LibDrizzle.drizzle_bugreport
     end
 
+    # add a query to be run concurrently
+    def add_query(conn, query, query_num, opts = [])
+    end
+
+    def run_all()
+    end
+
   end
 
 end

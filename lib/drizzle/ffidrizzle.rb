@@ -84,6 +84,9 @@ module LibDrizzle
                             :DRIZZLE_CON_READY, (1 << 4),
                             :DRIZZLE_CON_NO_RESULT_READ, (1 << 5) )
 
+  # query options
+  QueryOptions = enum( :DRIZZLE_QUERY_ALLOCATED, (1 << 0) )
+
   # options for main drizzle structure
   Options = enum( :DRIZZLE_NONE, 0,
                   :DRIZZLE_ALLOCATED, (1 << 0),
@@ -105,6 +108,7 @@ module LibDrizzle
 
   # query related functions
   attach_function :drizzle_query_str, [ :pointer, :pointer, :string, :pointer ], :pointer
+  attach_function :drizzle_query_add, [ :pointer, :pointer, :pointer, :pointer, :string, :size_t, QueryOptions, :pointer ], :pointer
   attach_function :drizzle_result_read, [ :pointer, :pointer, :pointer ], :pointer
   attach_function :drizzle_row_buffer, [ :pointer, :pointer ], :pointer
   attach_function :drizzle_row_free, [ :pointer ], :void
