@@ -119,6 +119,7 @@ module LibDrizzle
   attach_function :drizzle_column_name, [ :pointer ], :string
   attach_function :drizzle_column_buffer, [ :pointer ], ReturnCode
   attach_function :drizzle_result_column_count, [ :pointer ], :uint16
+  attach_function :drizzle_result_affected_rows, [ :pointer ], :uint64
 
   # miscellaneous functions
   attach_function :drizzle_version, [], :string
