@@ -8,6 +8,8 @@ require 'rr'
 
 include Drizzle
 
+PORT = 4427
+
 class Test::Unit::TestCase
   include RR::Adapters::TestUnit
 

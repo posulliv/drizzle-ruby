@@ -3,17 +3,17 @@ require File.dirname(__FILE__) + '/helper'
 class TestBasic < Test::Unit::TestCase
 
   def setup
-    conn = Drizzle::Connection.new("localhost", 9306)
+    conn = Drizzle::Connection.new("localhost", PORT)
     res = conn.query("CREATE DATABASE drizzleruby")
   end
 
   def teardown
-    conn = Drizzle::Connection.new("localhost", 9306)
+    conn = Drizzle::Connection.new("localhost", PORT)
     res = conn.query("DROP DATABASE drizzleruby")
   end
 
   should "create and drop a table" do
-    conn = Drizzle::Connection.new("localhost", 9306, "drizzleruby")
+    conn = Drizzle::Connection.new("localhost", PORT, "drizzleruby")
     res = conn.query("select table_schema from information_schema.tables where table_schema = 'drizzleruby'")
     assert_equal res.class, Drizzle::Result
     res.buffer_result
@@ -37,7 +37,7 @@ class TestBasic < Test::Unit::TestCase
   end
 
   should "update affected rows appropriately" do
-    conn = Drizzle::Connection.new("localhost", 9306, "drizzleruby")
+    conn = Drizzle::Connection.new("localhost", PORT, "drizzleruby")
     res = conn.query("select table_schema from information_schema.tables where table_schema = 'drizzleruby'")
     assert_equal res.class, Drizzle::Result
     res.buffer_result
@@ -74,7 +74,7 @@ class TestBasic < Test::Unit::TestCase
   end
 
   should "perform a multi-insert statement correctly" do
-    conn = Drizzle::Connection.new("localhost", 9306, "drizzleruby")
+    conn = Drizzle::Connection.new("localhost", PORT, "drizzleruby")
     res = conn.query("select table_schema from information_schema.tables where table_schema = 'drizzleruby'")
     assert_equal res.class, Drizzle::Result
     res.buffer_result
@@ -107,7 +107,7 @@ class TestBasic < Test::Unit::TestCase
   end
 
   should "insert and fetch a blob value correctly" do
-    conn = Drizzle::Connection.new("localhost", 9306, "drizzleruby")
+    conn = Drizzle::Connection.new("localhost", PORT, "drizzleruby")
     res = conn.query("create table t1(a int, b blob)")
     res = conn.query("insert into t1 values (1, 'padraig'), (2, 'sarah'), (3, 'tomas')")
     assert_equal 3, res.affected_rows

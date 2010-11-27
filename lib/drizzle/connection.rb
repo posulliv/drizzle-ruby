@@ -73,9 +73,9 @@ module Drizzle
         query = "show variables like '%stad_key%'"
         res = LibDrizzle.drizzle_query_str(@con_ptr, nil, query, @ret_ptr)
         check_return_code(@ret_ptr, @drizzle_handle)
-        Result.new(res)
-        res.buffer_result
-        res.each do |row|
+        result = Result.new(res)
+        result.buffer_result
+        result.each do |row|
           @rand_key = row[1]
         end
       end
@@ -122,11 +122,12 @@ module Drizzle
       toks = query.split(" ")
       new_query = ""
       toks.each do |token|
-        if Drizzle::keywords[token] == true
+        if Drizzle::Keywords[token.downcase] == true
           token << @rand_key
         end
         new_query << token << " "
       end
+      new_query
     end
 
   end

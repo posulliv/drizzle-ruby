@@ -12,7 +12,7 @@ module Drizzle
   # map of keywords that will be used with the SQL injection
   # prevention plugin in drizzle
   #
-  keywords =
+  Keywords =
   {
     "add" => true,
     "all" => true,
