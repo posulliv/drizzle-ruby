@@ -9,34 +9,6 @@ module Drizzle
   end
 
   # 
-  # map of keywords that will be used with the SQL injection
-  # prevention plugin in drizzle
-  #
-  Keywords =
-  {
-    "add" => true,
-    "all" => true,
-    "alter" => true,
-    "analyze" => true,
-    "and" => true,
-    "any" => true,
-    "as" => true,
-    "asc" => true,
-    "before" => true,
-    "between" => true,
-    "by" => true,
-    "count" => true,
-    "distinct" => true,
-    "drop" => true,
-    "from" => true,
-    "having" => true,
-    "or" => true,
-    "select" => true,
-    "union" => true,
-    "where" => true
-  }
-
-  # 
   # A Drizzle instance
   #
   class Drizzle
