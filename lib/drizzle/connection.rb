@@ -131,15 +131,8 @@ module Drizzle
     # execute a query and construct a result object
     #
     def query(query)
-      if @randomize_queries == false or @rand_key.empty?
-        res = LibDrizzle.drizzle_query_str(@con_ptr, nil, query, @ret_ptr)
-        check_return_code
-      else
-        rand_query = randomize_query(query)
-        res = LibDrizzle.drizzle_query_str(@con_ptr, nil, rand_query, @ret_ptr)
-        check_return_code
-      end
-
+      res = LibDrizzle.drizzle_query_str(@con_ptr, nil, query, @ret_ptr)
+      check_return_code
       Result.new(res)
     end
 
@@ -148,6 +141,9 @@ module Drizzle
     # keywords
     #
     def randomize_query(query)
+      if @rand_key.empty?
+        return query
+      end
       toks = query.split(" ")
       new_query = ""
       toks.each do |token|
